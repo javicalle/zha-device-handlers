@@ -175,19 +175,20 @@ class TuyaData(t.Struct):
     @classmethod
     def deserialize(cls, data: bytes) -> Tuple["TuyaData", bytes]:
         """Deserialize data."""
+        _LOGGER.debug("data: %s", data)
         res = cls()
         res.dp_type, data = TuyaDPType.deserialize(data)
         res.function, data = t.uint8_t.deserialize(data)
         res.raw, data = t.LVBytes.deserialize(data)
-        if res.dp_type not in (TuyaDPType.BITMAP, TuyaDPType.STRING, TuyaDPType.ENUM):
-            res.raw = res.raw[::-1]
+        # if res.dp_type not in (TuyaDPType.BITMAP, TuyaDPType.STRING, TuyaDPType.ENUM):
+        #     res.raw = res.raw[::-1]
         return res, data
 
     @property
     def payload(self) -> Union[t.Bool, t.CharacterString, t.uint32_t, t.data32]:
         """Payload accordingly to data point type."""
         if self.dp_type == TuyaDPType.VALUE:
-            return t.uint32_t.deserialize(self.raw)[0]
+            return t.uint32_t.deserialize(self.raw[::-1])[0]  # waiting to https://github.com/zigpy/zigpy/pull/1124
         elif self.dp_type == TuyaDPType.BOOL:
             return t.Bool.deserialize(self.raw)[0]
         elif self.dp_type == TuyaDPType.STRING:
